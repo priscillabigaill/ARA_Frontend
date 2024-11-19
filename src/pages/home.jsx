@@ -47,17 +47,16 @@ function Home() {
                       Home
               </p>    
             </button>
-
                 
             <button className='w-fit px-8 h-full bg-pink hover:bg-pink-100'
-            onClick={() => navigate('/')}>
+            onClick={() => navigate('/detector')}>
                 <p className='font-inter text-xl'>
                     AI Art Detector
                 </p>
             </button>
 
             <button className='w-fit px-8 h-full bg-pink hover:bg-pink-100'
-            onClick={() => navigate('/')}>
+            onClick={() => navigate('/database')}>
                 <p className='font-inter text-xl'>
                     Image Database
                 </p>
@@ -202,10 +201,11 @@ function Home() {
                 />
 
                 <img 
-                className='h-40 w-40 mx-8 my-4'
+                className='h-20 w-40 mx-8 my-4'
                 src={images.midjourneylogo} alt='midjourney'
                 style={{ objectFit: 'cover'}} 
                 />
+
             </div>
         </div>
 

@@ -23,13 +23,29 @@ export default {
         blue: {
           DEFAULT: '#6b8daa',
           100: '#234561',
+          200: '#BBC7E0',
+          300: '#E7ECF6',
+          400: '#0951AE',
         },
         green: {
           DEFAULT: '#C9E9D2',
+        },
+        purple: {
+          DEFAULT: '#7E75D1',
+        },
+      },
+      animation: {
+        spin: 'spin 1s linear infinite', // Default spin animation
+        spinSlow: 'spin 2s linear infinite', // Slower spin animation
+      },
+      keyframes: {
+        spin: {
+          to: {
+            transform: 'rotate(360deg)',
+          },
         },
       },
     },
   },
   plugins: [],
 }
-
