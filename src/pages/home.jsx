@@ -134,7 +134,7 @@ function Home() {
               <button
                 className='w-full py-2 text-center text-xl font-inter hover:bg-gray-200'
                 onClick={() => {
-                  navigate('/');
+                  navigate('/detector');
                   setIsOpen(false);
                 }}
               >
@@ -144,7 +144,7 @@ function Home() {
               <button
                 className='w-full py-2 text-center text-xl font-inter hover:bg-gray-200'
                 onClick={() => {
-                  navigate('/');
+                  navigate('/database');
                   setIsOpen(false);
                 }}
               >
@@ -169,16 +169,18 @@ function Home() {
                 </animated.p>
 
                 <animated.button className='mt-20 min-h-12 w-36 bg-green rounded-xl shadow-sm' 
-                style={{...fadeIn}}>
+                style={{...fadeIn}}
+                onClick={() => {
+                  navigate('/detector');
+                }}>
                     <p className='text-lg font-inter font-roman text-blue-100'>
                         Try Now!
                     </p>
-
                 </animated.button>
             </div>
         </div>
 
-        <div className='mt-56 mb-12 flex flex-col items-center rounded-[2.5rem] mx-20 bg-blue h-fit py-12 px-12'>
+        <div className='mt-[3.0rem] mb-12 flex flex-col items-center rounded-[2.5rem] mx-20 bg-blue h-fit py-12 px-12'>
             <p className='font-inter font-bold text-4xl text-cream'>
             How does our Artwork Realness Analyzer work?
             </p>
@@ -201,7 +203,7 @@ function Home() {
                 />
 
                 <img 
-                className='h-20 w-40 mx-8 my-4'
+                className='h-40 w-40 mx-8 my-4'
                 src={images.midjourneylogo} alt='midjourney'
                 style={{ objectFit: 'cover'}} 
                 />

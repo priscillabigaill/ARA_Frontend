@@ -1,5 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom';
+import { useRef } from 'react';
 import images from '../constants/images';
 import { useSpring, animated } from '@react-spring/web'
 import { useState } from 'react';
@@ -33,11 +34,27 @@ function Detector() {
         to: { opacity: 1 },
     })
 
+    const handleClick = event => {
+        hiddenFileInput.current.click();
+    };
+
+    const handleChange = (event) => {
+        const fileUploaded = event.target.files[0];
+        if (fileUploaded) {
+            setPreviewURL(URL.createObjectURL(fileUploaded));
+            setLoading(true); 
+            setTimeout(() => setLoading(false), 2000);
+        }
+    };
+
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
     const [UID, setUID] = useState('109301930');
     const [AuthenticationDate, setAuthenticationDate] = useState('18 Nov 2024');
     const [loading, setLoading] = useState(false);
+    const hiddenFileInput = useRef(null);
+    const [uploadedFile, setUploadedFile] = useState(null); 
+    const [previewURL, setPreviewURL] = useState(null); 
 
   return (
     <div className='min-h-screen w-full bg-cream pb-12'>
@@ -137,7 +154,7 @@ function Detector() {
               <button
                 className='w-full py-2 text-center text-xl font-inter hover:bg-gray-200'
                 onClick={() => {
-                  navigate('/');
+                  navigate('/detector');
                   setIsOpen(false);
                 }}
               >
@@ -147,7 +164,7 @@ function Detector() {
               <button
                 className='w-full py-2 text-center text-xl font-inter hover:bg-gray-200'
                 onClick={() => {
-                  navigate('/');
+                  navigate('/database');
                   setIsOpen(false);
                 }}
               >
@@ -160,14 +177,79 @@ function Detector() {
 
         </div>
 
-        <div className='mt-[-90px] flex w-full h-[28rem]'>
-            <div className='flex w-full mt-32 mx-20 items-center'>
+        <div className='flex mt-10'>
+
+            <div className='ml-20 mr-10 flex flex-col w-full'>
                 <animated.p
-                className="flex-wrap text-6xl font-inter font-extrabold text-blue-100"
-                style={{ ...slideIn }}
-                >
-                AI-generated artwork detector
+                    className="flex-wrap text-6xl font-inter font-extrabold text-blue-100"
+                    style={{ ...slideIn }}
+                    >
+                    AI-generated artwork detector
                 </animated.p>
+
+                <animated.div
+                    className="mt-20 mb-12 flex rounded-[1.5rem] bg-blue-300 h-fit w-[32rem] p-8 shadow-md"
+                    style={{ ...fadeIn }}
+                    >
+                    {previewURL ? (
+                        <div className="flex">
+                            <img
+                                src={previewURL}
+                                alt="Uploaded Preview"
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                            />
+                        </div>
+                    ) : (
+                <>    
+                    <animated.div
+                        className="flex flex-col items-center justify-center w-[28rem] h-[25rem] bg-white rounded-xl shadow-sm border-dotted border-4 border-blue-300"
+                        style={{ ...fadeIn }}
+                    >
+                    <img
+                    className='opacity-20 h-30 w-45 justify-center'
+                    src={images.monalisa} alt='monalisa'
+                    style={{ objectFit: 'contain'}}
+                    />
+                        <div className="absolute flex flex-col items-center text-center">
+                        <label htmlFor="button-upload" className="cursor-pointer">
+                            <button
+                            className="h-20 w-20 flex items-center justify-center rounded-full shadow-mdfocus:outline-none"
+                            style={{ objectFit: "contain" }}
+                            onClick={handleClick}
+                            >
+                            <img
+                                className="h-15 w-15"
+                                src={images.upload}
+                                alt="upload"
+                                style={{ objectFit: "contain" }}
+                            /> 
+                            </button>
+                            </label>
+                            <input
+                                type="file"
+                                id="button-upload"
+                                onChange={handleChange}
+                                ref={hiddenFileInput}
+                                style={{display: 'none'}} // Make the file input element invisible
+                            />
+                            <p className="text-lg font-medium text-gray-700 mt-4">
+                                Drag & drop files or{' '}
+                                <span className="text-purple cursor-pointer hover:underline">
+                                Browse
+                                </span>
+                            </p>
+                            <p className="text-sm text-gray-500 mt-2">
+                                Supported formats: JPEG, PNG, JPG
+                            </p>
+                        </div>
+                    
+                    </animated.div>
+                    </>
+                    )}
+                    </animated.div>
+            </div>
+
+            <div className='mr-20 ml-10 flex flex-col items-center w-full'>
                 <animated.div
                     className="min-h-[6rem] w-full bg-blue-200 rounded-xl shadow-sm flex flex-col items-center justify-center"
                     style={{ ...fadeIn }}
@@ -176,59 +258,108 @@ function Detector() {
                     <div className="w-full bg-blue-200 rounded-t-xl p-2">
                         <animated.p
                         className="pl-3 mr-auto text-xl font-inter font-semibold text-gray-800"
-                        style={{ ...slideIn2 }}
+                        style={{ ...fadeIn }}
                         >
                         Result
                         </animated.p>
                     </div>
 
                     <div className="relative flex flex-row items-center justify-between w-full bg-blue-300 px-6 py-4 rounded-b-xl shadow-inner">
-                        <p className="text-lg font-bold text-black">
-                        The image is: <span className="text-blue-400">Likely AI-generated</span>
-                        </p>
+                        {loading ? (
+                                // <div className='flex justify-center items-center'>
+                                    <div className="mx-auto w-10 h-10 border-4 border-gray-300 border-t-purple rounded-full animate-spin"></div>
+                                // </div>
+                        ) : (
+                        <>
+                            <p className="text-lg font-bold text-black">
+                            The image is: <span className="text-blue-400">Likely AI-generated</span>
+                            </p>
 
-                        <div className="flex items-center justify-center w-16 h-16 bg-blue-400 text-white font-bold text-lg rounded-[1.5rem]">
-                        100%
-                        </div>
+                            <div className="flex items-center justify-center w-16 h-16 bg-blue-400 text-white font-bold text-lg rounded-[1.5rem]">
+                            100%
+                            </div>
+                        </>
+                        )}
                     </div>
-                    </animated.div>
-                </div>
-            </div>
-            
-            <animated.div
-                className="mr-auto mt-4 mb-12 flex flex-col rounded-[1.5rem] bg-blue-300 h-fit w-[32rem] p-8 shadow-md ml-20"
-                style={{ ...fadeIn }}
-                >
+
+                </animated.div>
+
                 <animated.div
-                    className="flex flex-col items-center justify-center w-[28rem] h-[25rem] bg-white rounded-xl shadow-sm border-dotted border-4 border-blue-300"
+                    className="h-full mt-[3.0rem] w-full bg-blue-200 rounded-xl shadow-sm flex flex-col items-center justify-center"
                     style={{ ...fadeIn }}
-                >
-                <img 
-                className='opacity-20 h-30 w-45 justify-center'
-                src={images.monalisa} alt='monalisa'
-                style={{ objectFit: 'contain'}} 
-                />
-                    <div className="absolute flex flex-col items-center text-center">
-                        <img 
-                            className='h-20 w-20 justify-center'
-                            src={images.upload} alt='upload'
-                            style={{ objectFit: 'contain'}} 
-                            />
-                        <p className="text-lg font-medium text-gray-700 mt-4">
-                            Drag & drop files or{' '}
-                            <span className="text-purple cursor-pointer hover:underline">
-                            Browse
-                            </span>
-                        </p>
+                    >
 
-                        <p className="text-sm text-gray-500 mt-2">
-                            Supported formats: JPEG, PNG, JPG
-                        </p>
+                    <div className="w-full bg-blue-200 rounded-t-xl p-2">
+                        <animated.p
+                        className="pl-3 mr-auto text-xl font-inter font-semibold text-gray-800"
+                        style={{ ...fadeIn }}
+                        >
+                        Diffusion
+                        </animated.p>
+
                     </div>
-                </animated.div>
-                </animated.div>
-                
 
+                    <div className="h-full relative flex flex-col items-center justify-center w-full bg-blue-300 px-6 py-4 rounded-b-xl shadow-inner">
+                    {loading ? (
+                      <div className="w-10 h-10 border-4 border-gray-300 border-t-purple rounded-full animate-spin"></div>
+                    ) : (
+                      <div className="flex flex-col space-y-6 w-full max-w-md">
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-xl font-semibold">DALL-E</span>
+                          <div className="w-3/4 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                            <div
+                              className="bg-blue-600 h-2.5 rounded-full dark:bg-blue-500"
+                              style={{ width: '45%' }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-xl font-semibold">Midjourney</span>
+                          <div className="w-3/4 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                            <div
+                              className="bg-blue-600 h-2.5 rounded-full dark:bg-blue-500"
+                              style={{ width: '45%' }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-xl font-semibold">Stable Diffusion</span>
+                          <div className="w-3/4 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                            <div
+                              className="bg-blue-600 h-2.5 rounded-full dark:bg-blue-500"
+                              style={{ width: '45%' }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-xl font-semibold">FLUX</span>
+                          <div className="w-3/4 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                            <div
+                              className="bg-blue-600 h-2.5 rounded-full dark:bg-blue-500"
+                              style={{ width: '45%' }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-xl font-semibold">CycleGAN</span>
+                          <div className="w-3/4 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                            <div
+                              className="bg-blue-600 h-2.5 rounded-full dark:bg-blue-500"
+                              style={{ width: '45%' }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </animated.div>
+            </div>
+        </div>
+        
     </div>
   )
 }

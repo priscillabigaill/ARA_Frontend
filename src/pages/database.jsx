@@ -48,9 +48,8 @@ function Database() {
           setLoading(false);
           setIsSearched(true);
           setIsMatch(inputUID === UID);
-      }, 3000);
+      }, 2000);
     };
-
 
     const handleKeyDown = (event) => {
         if (event.key === 'Enter') {
@@ -71,7 +70,7 @@ function Database() {
             </button>
                 
             <button className='w-fit px-8 h-full bg-pink hover:bg-pink-100'
-            onClick={() => navigate('/')}>
+            onClick={() => navigate('/detector')}>
                 <p className='font-inter text-xl'>
                     AI Art Detector
                 </p>
@@ -156,7 +155,7 @@ function Database() {
               <button
                 className='w-full py-2 text-center text-xl font-inter hover:bg-gray-200'
                 onClick={() => {
-                  navigate('/');
+                  navigate('/detector');
                   setIsOpen(false);
                 }}
               >
@@ -166,7 +165,7 @@ function Database() {
               <button
                 className='w-full py-2 text-center text-xl font-inter hover:bg-gray-200'
                 onClick={() => {
-                  navigate('/');
+                  navigate('/database');
                   setIsOpen(false);
                 }}
               >
@@ -233,11 +232,13 @@ function Database() {
             <animated.div className="mt-4 mb-12 flex flex-col items-center rounded-[2.5rem] mx-20 bg-blue-300 h-fit p-8 shadow-md"
             style={{ ...fadeIn }}
             >
-                {loading ? (
+                {loading && (
                         <div className='flex justify-center items-center'>
                             <div className="w-10 h-10 border-4 border-gray-300 border-t-purple rounded-full animate-spin"></div>
                         </div>
-                    ) : isMatch ? (
+                )}
+                {!loading && isSearched && (
+                  isMatch ? (
                 <animated.div className="flex w-full bg-white rounded-xl shadow-sm p-6"
                 style={{ ...fadeIn }}>
                     {/* Left Image Section */}
@@ -267,7 +268,9 @@ function Database() {
                         style={{ ...fadeIn }} >
                         Image not found in database.
                     </animated.div>
-                )}
+                ) 
+              )}
+
             </animated.div>
      )}
     </div>
