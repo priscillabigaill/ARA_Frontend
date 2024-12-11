@@ -4,57 +4,91 @@ import { useRef } from 'react';
 import images from '../constants/images';
 import { useSpring, animated } from '@react-spring/web'
 import { useState } from 'react';
+import DiffusionBar from '../diffusionBar';
+import axios from 'axios';
 
 function Detector() {
-    
-    const slideIn = useSpring({
-        config: {
-            tension: 170,
-            friction: 60
-        },
-        from: { y: -50, opacity: 0 },
-        to: { y: 0, opacity: 1 },
-    })
 
-    const slideIn2 = useSpring({
-        config: {
-            tension: 170,
-            friction: 60
-        },
-        from: { y: -50, opacity: 0 },
-        delay: 250,
-        to: { y: 0, opacity: 1 },
-    })
+  const slideIn = useSpring({
+      config: {
+          tension: 170,
+          friction: 60
+      },
+      from: { y: -50, opacity: 0 },
+      to: { y: 0, opacity: 1 },
+  })
 
-    const fadeIn= useSpring({ 
-        config: {
-          duration: 1200,
-        },
-        from: { opacity: 0 },
-        to: { opacity: 1 },
-    })
+  const slideIn2 = useSpring({
+      config: {
+          tension: 170,
+          friction: 60
+      },
+      from: { y: -50, opacity: 0 },
+      delay: 250,
+      to: { y: 0, opacity: 1 },
+  })
 
-    const handleClick = event => {
-        hiddenFileInput.current.click();
-    };
+  // const fadeIn= useSpring({ 
+  //     config: {
+  //       duration: 1200,
+  //     },
+  //     from: { opacity: 0 },
+  //     to: { opacity: 1 },
+  // })
 
-    const handleChange = (event) => {
-        const fileUploaded = event.target.files[0];
-        if (fileUploaded) {
-            setPreviewURL(URL.createObjectURL(fileUploaded));
-            setLoading(true); 
-            setTimeout(() => setLoading(false), 2000);
-        }
-    };
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [previewURL, setPreviewURL] = useState(null);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [selectedModel, setSelectedModel] = useState(null);
+  const hiddenFileInput = useRef(null);
+  const navigate = useNavigate();
 
-    const navigate = useNavigate();
-    const [isOpen, setIsOpen] = useState(false);
-    const [UID, setUID] = useState('109301930');
-    const [AuthenticationDate, setAuthenticationDate] = useState('18 Nov 2024');
-    const [loading, setLoading] = useState(false);
-    const hiddenFileInput = useRef(null);
-    const [uploadedFile, setUploadedFile] = useState(null); 
-    const [previewURL, setPreviewURL] = useState(null); 
+  const handleClick = () => hiddenFileInput.current.click();
+
+  const handleChange = async (event) => {
+    const fileUploaded = event.target.files[0];
+    if (fileUploaded) {
+      setPreviewURL(URL.createObjectURL(fileUploaded));
+      setUploadedFile(fileUploaded);
+      setLoading(true);
+
+      try {
+        const formData = new FormData();
+        formData.append('file', fileUploaded);
+
+        const response = await axios.post('http://127.0.0.1:8000/images/', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        console.log('Response from server:', response.data);
+      } catch (error) {
+        console.error('Error uploading image:', error.response || error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const diffusionData = {
+    "vgg9 (recommended)": { cyclegan: 0.06, dalle: 0.01, midjourney: 0.01, real: 0.01, stablediffusion: 0.91 },
+    efficientnet: { cyclegan: 0.76, dalle: 0.0, midjourney: 0.01, real: 0.0, stablediffusion: 0.23 },
+    mobilenet: { cyclegan: 0.1, dalle: 0.0, midjourney: 0.0, real: 0.0, stablediffusion: 0.89 },
+    resnet50: { cyclegan: 0.75, dalle: 0.0, midjourney: 0.12, real: 0.0, stablediffusion: 0.12 },
+    vgg16: { cyclegan: 0.95, dalle: 0.0, midjourney: 0.0, real: 0.0, stablediffusion: 0.05 },
+  };
+
+  const handleModelSelect = (model) => {
+    setSelectedModel(selectedModel === model ? null : model);
+  };
+
+  const fadeIn = useSpring({
+    config: { duration: 1200 },
+    from: { opacity: 0 },
+    to: { opacity: 1 },
+  });
 
   return (
     <div className='min-h-screen w-full bg-cream pb-12'>
@@ -279,80 +313,63 @@ function Detector() {
                             100%
                             </div>
                         </>
+                        
                         )}
                     </div>
-
                 </animated.div>
 
                 <animated.div
-                    className="h-full mt-[3.0rem] w-full bg-blue-200 rounded-xl shadow-sm flex flex-col items-center justify-center"
-                    style={{ ...fadeIn }}
+                  className="h-full mt-[3.0rem] w-full bg-blue-200 rounded-xl shadow-sm flex flex-col items-center justify-center"
+                  style={{ ...fadeIn }}
+                >
+                  <div className="w-full bg-blue-200 rounded-t-xl p-2">
+                    <animated.p
+                      className="pl-3 mr-auto text-xl font-inter font-semibold text-gray-800"
+                      style={{ ...fadeIn }}
                     >
+                      Diffusion
+                    </animated.p>
+                  </div>
 
-                    <div className="w-full bg-blue-200 rounded-t-xl p-2">
-                        <animated.p
-                        className="pl-3 mr-auto text-xl font-inter font-semibold text-gray-800"
-                        style={{ ...fadeIn }}
-                        >
-                        Diffusion
-                        </animated.p>
-
-                    </div>
-
-                    <div className="h-full relative flex flex-col items-center justify-center w-full bg-blue-300 px-6 py-4 rounded-b-xl shadow-inner">
+                  <div className="h-full relative flex flex-col items-center justify-center w-full bg-blue-300 px-6 py-4 rounded-b-xl shadow-inner">
                     {loading ? (
                       <div className="w-10 h-10 border-4 border-gray-300 border-t-purple rounded-full animate-spin"></div>
                     ) : (
                       <div className="flex flex-col space-y-6 w-full max-w-md">
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-xl font-semibold">DALL-E</span>
-                          <div className="w-3/4 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                            <div
-                              className="bg-blue-600 h-2.5 rounded-full dark:bg-blue-500"
-                              style={{ width: '45%' }}
-                            ></div>
-                          </div>
-                        </div>
+                        {Object.keys(diffusionData).map((model) => (
+                          <div key={model} className="w-full mb-4">
+                            <button
+                              className="w-full text-left p-4 bg-blue-400 text-white rounded-lg font-bold"
+                              onClick={() => handleModelSelect(model)}
+                            >
+                              {model}
+                            </button>
+                            {selectedModel === model && (
+                              <div className="mt-2 bg-white rounded-lg p-4 shadow">
+                                {Object.entries(diffusionData[model]).map(([label, value]) => (
+                                  <div key={label} className="flex items-center space-x-4 mb-4">
+                                    {/* Label */}
+                                    <span className="text-gray-800 w-2/5 text-left truncate">{label}</span>
 
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-xl font-semibold">Midjourney</span>
-                          <div className="w-3/4 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                            <div
-                              className="bg-blue-600 h-2.5 rounded-full dark:bg-blue-500"
-                              style={{ width: '45%' }}
-                            ></div>
-                          </div>
-                        </div>
+                                    {/* Gradient loading bar */}
+                                    <div className="w-2/5 h-3 bg-gray-200 rounded-full relative">
+                                      <div
+                                        className="absolute top-0 left-0 h-full rounded-full"
+                                        style={{
+                                          width: `${(value * 100).toFixed(1)}%`,
+                                          background: 'linear-gradient(to left, #fbbd1c, #ed4a8f)',
+                                        }}
+                                      ></div>
+                                    </div>
 
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-xl font-semibold">Stable Diffusion</span>
-                          <div className="w-3/4 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                            <div
-                              className="bg-blue-600 h-2.5 rounded-full dark:bg-blue-500"
-                              style={{ width: '45%' }}
-                            ></div>
+                                    {/* Percentage */}
+                                    <span className="text-blue-600 font-semibold w-1/5 text-right">{(value * 100).toFixed(1)}%</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        </div>
-
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-xl font-semibold">FLUX</span>
-                          <div className="w-3/4 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                            <div
-                              className="bg-blue-600 h-2.5 rounded-full dark:bg-blue-500"
-                              style={{ width: '45%' }}
-                            ></div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-xl font-semibold">CycleGAN</span>
-                          <div className="w-3/4 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                            <div
-                              className="bg-blue-600 h-2.5 rounded-full dark:bg-blue-500"
-                              style={{ width: '45%' }}
-                            ></div>
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     )}
                   </div>
