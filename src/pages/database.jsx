@@ -67,7 +67,7 @@ function Database() {
 
       try {
         // Make a GET request to FastAPI endpoint
-        const response = await axios.get(`http://127.0.0.1:8000/images/${inputUID}`);
+        const response = await axios.get(`https://ara-backend-five.vercel.app/images/${inputUID}`);
 
         // If the image is found:
         const data = response.data;
