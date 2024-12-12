@@ -4,48 +4,62 @@ import { useRef } from 'react';
 import images from '../constants/images';
 import { useSpring, animated } from '@react-spring/web'
 import { useState } from 'react';
-import DiffusionBar from '../diffusionBar';
 import axios from 'axios';
 
 function Detector() {
+    const slideIn = useSpring({
+        config: {
+            tension: 170,
+            friction: 60
+        },
+        from: { y: -50, opacity: 0 },
+        to: { y: 0, opacity: 1 },
+    })
 
-  const slideIn = useSpring({
-      config: {
-          tension: 170,
-          friction: 60
-      },
-      from: { y: -50, opacity: 0 },
-      to: { y: 0, opacity: 1 },
-  })
-
-  const slideIn2 = useSpring({
-      config: {
-          tension: 170,
-          friction: 60
-      },
-      from: { y: -50, opacity: 0 },
-      delay: 250,
-      to: { y: 0, opacity: 1 },
-  })
-
-  // const fadeIn= useSpring({ 
-  //     config: {
-  //       duration: 1200,
-  //     },
-  //     from: { opacity: 0 },
-  //     to: { opacity: 1 },
-  // })
+    const fadeIn= useSpring({ 
+        config: {
+          duration: 1200,
+        },
+        from: { opacity: 0 },
+        to: { opacity: 1 },
+    })
 
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [previewURL, setPreviewURL] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
-  const [selectedModel, setSelectedModel] = useState(null);
+  const [openedModels, setOpenedModels] = useState([]);
+
+  const [aiGeneratedProbability, setAiGeneratedProbability] = useState(null);
+  const [realGeneratedProbability, setRealGeneratedProbability] = useState(null);
+  const [classification, setClassification] = useState('');
+
+  const [fileUrl, setFileUrl] = useState(null);
+  const [uid, setUid] = useState(null);
+  const [saveMessage, setSaveMessage] = useState('');
+  const [allModelResults, setAllModelResults] = useState(null);
+
   const hiddenFileInput = useRef(null);
   const navigate = useNavigate();
 
-  const handleClick = () => hiddenFileInput.current.click();
+  const diffusionData = {
+    "vgg16 (recommended)": { cyclegan: 0.06, dalle: 0.01, midjourney: 0.01, real: 0.01, stablediffusion: 0.91 },
+    vgg9: { cyclegan: 0.95, dalle: 0.0, midjourney: 0.0, real: 0.0, stablediffusion: 0.05 },
+    efficientnet: { cyclegan: 0.76, dalle: 0.0, midjourney: 0.01, real: 0.0, stablediffusion: 0.23 },
+    resnet50: { cyclegan: 0.75, dalle: 0.0, midjourney: 0.12, real: 0.0, stablediffusion: 0.12 },
+    mobilenet: { cyclegan: 0.1, dalle: 0.0, midjourney: 0.0, real: 0.0, stablediffusion: 0.89 },
+  };
 
+  const handleClick = () => {
+    console.log('hiddenFileInput:', hiddenFileInput.current); // Check if the reference is set
+    if (hiddenFileInput.current) {
+      hiddenFileInput.current.click();
+    } else {
+      console.error("File input reference is not available.");
+    }
+  };
+  
+  
   const handleChange = async (event) => {
     const fileUploaded = event.target.files[0];
     if (fileUploaded) {
@@ -58,12 +72,23 @@ function Detector() {
         formData.append('file', fileUploaded);
 
         const response = await axios.post('http://127.0.0.1:8000/images/', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
 
-        console.log('Response from server:', response.data);
+        // Extract probabilities and classification
+        const realProbStr = response.data.real_image_probability;  // e.g. "82.40%"
+        const aiProbStr = response.data.ai_generated_probability;  // e.g. "17.60%"
+        const realProb = parseFloat(realProbStr);
+        const aiProb = parseFloat(aiProbStr);
+
+        setAiGeneratedProbability(aiProbStr);
+        setRealGeneratedProbability(realProbStr);
+        setFileUrl(response.data.file_url);
+        setUid(response.data.uid);
+        setAllModelResults(response.data.all_model_results);
+
+        const classificationResult = realProb > 50 ? 'Likely Human-Created' : 'Likely AI-Generated';
+        setClassification(classificationResult);
       } catch (error) {
         console.error('Error uploading image:', error.response || error.message);
       } finally {
@@ -72,23 +97,55 @@ function Detector() {
     }
   };
 
-  const diffusionData = {
-    "vgg9 (recommended)": { cyclegan: 0.06, dalle: 0.01, midjourney: 0.01, real: 0.01, stablediffusion: 0.91 },
-    efficientnet: { cyclegan: 0.76, dalle: 0.0, midjourney: 0.01, real: 0.0, stablediffusion: 0.23 },
-    mobilenet: { cyclegan: 0.1, dalle: 0.0, midjourney: 0.0, real: 0.0, stablediffusion: 0.89 },
-    resnet50: { cyclegan: 0.75, dalle: 0.0, midjourney: 0.12, real: 0.0, stablediffusion: 0.12 },
-    vgg16: { cyclegan: 0.95, dalle: 0.0, midjourney: 0.0, real: 0.0, stablediffusion: 0.05 },
+  const handleSave = async () => {
+    if (!uploadedFile) {
+      setSaveMessage('No image available to save.');
+      return;
+    }
+  
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+      // Set save_to_db to true to trigger the save in the backend
+      formData.append('save_to_db', 'true');
+  
+      const response = await axios.post('http://127.0.0.1:8000/images/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+  
+      if (response.data.saved_to_database) {
+        setUid(response.data.uid); // Update the UID with the response from the backend
+        setSaveMessage(`Image saved successfully with UID: ${response.data.uid}`);
+      } else {
+        setSaveMessage('Failed to save image.');
+      }
+    } catch (error) {
+      console.error('Error saving image:', error.response || error.message);
+      setSaveMessage('Error saving image.');
+    }
+  };
+  
+
+  const handleModelToggle = (model) => {
+    if (openedModels.includes(model)) {
+      setOpenedModels(openedModels.filter((m) => m !== model)); 
+    } else {
+      setOpenedModels([...openedModels, model]); 
+    }
   };
 
-  const handleModelSelect = (model) => {
-    setSelectedModel(selectedModel === model ? null : model);
+  const getDisplayedClassification = () => {
+    if (!classification) return "Likely AI-generated";
+    return classification;
   };
 
-  const fadeIn = useSpring({
-    config: { duration: 1200 },
-    from: { opacity: 0 },
-    to: { opacity: 1 },
-  });
+  const getDisplayedPercentage = () => {
+    if (!classification) return "100%";
+    return classification === 'Likely Human-Created' ? realGeneratedProbability : aiGeneratedProbability;
+  };
+
+  // Determine which data to show in the dropdown: default diffusionData if no image, else backend data
+  const dropdownData = !previewURL ? diffusionData : (allModelResults || diffusionData);
 
   return (
     <div className='min-h-screen w-full bg-cream pb-12'>
@@ -151,7 +208,7 @@ function Detector() {
         >
           <div
             className='bg-white rounded-lg w-3/4 max-w-sm'
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+            onClick={(e) => e.stopPropagation()} 
           >
             {/* Close Button */}
             <div className='flex justify-end p-2'>
@@ -225,63 +282,81 @@ function Detector() {
                     className="mt-20 mb-12 flex rounded-[1.5rem] bg-blue-300 h-fit w-[32rem] p-8 shadow-md"
                     style={{ ...fadeIn }}
                     >
+                  <input
+                    type="file"
+                    id="button-upload"
+                    onChange={handleChange}
+                    ref={hiddenFileInput}
+                    style={{ display: 'none' }}
+                  />
                     {previewURL ? (
-                        <div className="flex">
-                            <img
-                                src={previewURL}
-                                alt="Uploaded Preview"
-                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                            />
-                        </div>
+                      <div className="flex">
+                        <button
+                          onClick={handleClick}
+                          className="w-full h-full focus:outline-none"
+                          style={{ border: 'none', background: 'none', padding: 0 }}
+                        >
+                          <img
+                            src={previewURL}
+                            alt="Uploaded Preview"
+                            className="rounded-md cursor-pointer"
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                          />
+                          <p className="mt-2 text-sm text-center text-gray-500">
+                            Click on the image to upload another one
+                          </p>
+                        </button>
+                      </div>
                     ) : (
-                <>    
-                    <animated.div
-                        className="flex flex-col items-center justify-center w-[28rem] h-[25rem] bg-white rounded-xl shadow-sm border-dotted border-4 border-blue-300"
-                        style={{ ...fadeIn }}
-                    >
-                    <img
-                    className='opacity-20 h-30 w-45 justify-center'
-                    src={images.monalisa} alt='monalisa'
-                    style={{ objectFit: 'contain'}}
-                    />
-                        <div className="absolute flex flex-col items-center text-center">
-                        <label htmlFor="button-upload" className="cursor-pointer">
-                            <button
-                            className="h-20 w-20 flex items-center justify-center rounded-full shadow-mdfocus:outline-none"
-                            style={{ objectFit: "contain" }}
-                            onClick={handleClick}
-                            >
-                            <img
-                                className="h-15 w-15"
-                                src={images.upload}
-                                alt="upload"
+                      <>
+                        <animated.div
+                          className="flex flex-col items-center justify-center w-[28rem] h-[25rem] bg-white rounded-xl shadow-sm border-dotted border-4 border-blue-300"
+                          style={{ ...fadeIn }}
+                        >
+                          <img
+                            className="opacity-20 h-30 w-45 justify-center"
+                            src={images.monalisa}
+                            alt="monalisa"
+                            style={{ objectFit: 'contain' }}
+                          />
+                          <div className="absolute flex flex-col items-center text-center">
+                            <label htmlFor="button-upload" className="cursor-pointer">
+                              <button
+                                className="h-20 w-20 flex items-center justify-center rounded-full shadow-mdfocus:outline-none"
                                 style={{ objectFit: "contain" }}
-                            /> 
-                            </button>
+                                onClick={handleClick}
+                              >
+                                <img
+                                  className="h-15 w-15"
+                                  src={images.upload}
+                                  alt="upload"
+                                  style={{ objectFit: "contain" }}
+                                />
+                              </button>
                             </label>
-                            <input
-                                type="file"
-                                id="button-upload"
-                                onChange={handleChange}
-                                ref={hiddenFileInput}
-                                style={{display: 'none'}} // Make the file input element invisible
-                            />
+                            {/* <input
+                              type="file"
+                              id="button-upload"
+                              onChange={handleChange}
+                              ref={hiddenFileInput}
+                              style={{ display: 'none' }}
+                            /> */}
                             <p className="text-lg font-medium text-gray-700 mt-4">
-                                Drag & drop files or{' '}
-                                <span className="text-purple cursor-pointer hover:underline">
+                              Drag & drop files or{' '}
+                              <span className="text-purple cursor-pointer hover:underline">
                                 Browse
-                                </span>
+                              </span>
                             </p>
                             <p className="text-sm text-gray-500 mt-2">
-                                Supported formats: JPEG, PNG, JPG
+                              Supported formats: JPEG, PNG, JPG
                             </p>
-                        </div>
-                    
-                    </animated.div>
-                    </>
+                          </div>
+                        </animated.div>
+                      </>
                     )}
                     </animated.div>
-            </div>
+                                </div>
+
 
             <div className='mr-20 ml-10 flex flex-col items-center w-full'>
                 <animated.div
@@ -294,29 +369,70 @@ function Detector() {
                         className="pl-3 mr-auto text-xl font-inter font-semibold text-gray-800"
                         style={{ ...fadeIn }}
                         >
-                        Result
+                        Result (VGG16)
                         </animated.p>
                     </div>
 
                     <div className="relative flex flex-row items-center justify-between w-full bg-blue-300 px-6 py-4 rounded-b-xl shadow-inner">
-                        {loading ? (
-                                // <div className='flex justify-center items-center'>
-                                    <div className="mx-auto w-10 h-10 border-4 border-gray-300 border-t-purple rounded-full animate-spin"></div>
-                                // </div>
-                        ) : (
+                      {loading ? (
+                        <div className="mx-auto w-10 h-10 border-4 border-gray-300 border-t-purple rounded-full animate-spin"></div>
+                      ) : (
                         <>
-                            <p className="text-lg font-bold text-black">
-                            The image is: <span className="text-blue-400">Likely AI-generated</span>
-                            </p>
+                          {previewURL ? (
+                            <>
+                              <p className="text-lg font-bold text-black">
+                                The image is:{' '}
+                                <span
+                                  className={`font-semibold ${
+                                    classification === 'Likely Human-Created' ? 'text-green-600' : 'text-blue-400'
+                                  }`}
+                                >
+                                  {getDisplayedClassification()}
+                                </span>
+                              </p>
 
-                            <div className="flex items-center justify-center w-16 h-16 bg-blue-400 text-white font-bold text-lg rounded-[1.5rem]">
-                            100%
-                            </div>
+                              <div
+                                className={`flex items-center justify-center w-20 h-20 font-bold text-lg rounded-[1.5rem] ${
+                                  classification === 'Likely Human-Created'
+                                    ? 'bg-green-100 text-white'
+                                    : 'bg-blue-400 text-white'
+                                }`}
+                              >
+                                {getDisplayedPercentage()}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-lg font-bold text-black">
+                                The image is: <span className="text-blue-400">Likely AI-generated</span>
+                              </p>
+                              <div className="flex items-center justify-center w-16 h-16 bg-blue-400 text-white font-bold text-lg rounded-[1.5rem]">
+                                100%
+                              </div>
+                            </>
+                          )}
                         </>
-                        
-                        )}
+                      )}
                     </div>
+
                 </animated.div>
+
+                {/** If real > 50%, show save button and saved message */}
+                {!loading && previewURL && classification === 'Likely Human-Created' && (
+                  <div className='mt-4'>
+                    <button
+                      onClick={handleSave}
+                      className='mt-10 mb-[-25px] px-3 py-2 bg-green-100 text-white rounded-lg font-bold hover:bg-blue-500 transition-colors'
+                    >
+                      Save to Database
+                    </button>
+                    {saveMessage && (
+                      <p className='mt-2 text-green-600 font-semibold'>
+                        {saveMessage}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <animated.div
                   className="h-full mt-[3.0rem] w-full bg-blue-200 rounded-xl shadow-sm flex flex-col items-center justify-center"
@@ -336,36 +452,46 @@ function Detector() {
                       <div className="w-10 h-10 border-4 border-gray-300 border-t-purple rounded-full animate-spin"></div>
                     ) : (
                       <div className="flex flex-col space-y-6 w-full max-w-md">
-                        {Object.keys(diffusionData).map((model) => (
+                        {Object.keys(dropdownData).map((model) => (
                           <div key={model} className="w-full mb-4">
                             <button
                               className="w-full text-left p-4 bg-blue-400 text-white rounded-lg font-bold"
-                              onClick={() => handleModelSelect(model)}
+                              onClick={() => handleModelToggle(model)}
                             >
                               {model}
                             </button>
-                            {selectedModel === model && (
+                            {openedModels.includes(model) && (
                               <div className="mt-2 bg-white rounded-lg p-4 shadow">
-                                {Object.entries(diffusionData[model]).map(([label, value]) => (
-                                  <div key={label} className="flex items-center space-x-4 mb-4">
-                                    {/* Label */}
-                                    <span className="text-gray-800 w-2/5 text-left truncate">{label}</span>
+                                {Object.entries(dropdownData[model]).map(([label, value]) => {
+                                  // Value could be a percentage string (from backend) or a number (from default diffusionData)
+                                  let percentage = 0;
+                                  let displayValue = '';
+                                  if (typeof value === 'string' && value.endsWith('%')) {
+                                    // Backend data format
+                                    percentage = parseFloat(value);
+                                    displayValue = value;
+                                  } else {
+                                    // Default diffusionData format (number)
+                                    percentage = value * 100;
+                                    displayValue = percentage.toFixed(1) + '%';
+                                  }
 
-                                    {/* Gradient loading bar */}
-                                    <div className="w-2/5 h-3 bg-gray-200 rounded-full relative">
-                                      <div
-                                        className="absolute top-0 left-0 h-full rounded-full"
-                                        style={{
-                                          width: `${(value * 100).toFixed(1)}%`,
-                                          background: 'linear-gradient(to left, #fbbd1c, #ed4a8f)',
-                                        }}
-                                      ></div>
+                                  return (
+                                    <div key={label} className="flex items-center space-x-4 mb-4">
+                                      <span className="text-gray-800 w-2/5 text-left truncate">{label}</span>
+                                      <div className="w-2/5 h-3 bg-gray-200 rounded-full relative">
+                                        <div
+                                          className="absolute top-0 left-0 h-full rounded-full"
+                                          style={{
+                                            width: `${percentage}%`,
+                                            background: 'linear-gradient(to left, #fbbd1c, #ed4a8f)',
+                                          }}
+                                        ></div>
+                                      </div>
+                                      <span className="text-blue-600 font-semibold w-1/5 text-right">{displayValue}</span>
                                     </div>
-
-                                    {/* Percentage */}
-                                    <span className="text-blue-600 font-semibold w-1/5 text-right">{(value * 100).toFixed(1)}%</span>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             )}
                           </div>

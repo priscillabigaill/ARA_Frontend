@@ -180,7 +180,7 @@ function Home() {
             </div>
         </div>
 
-        <div className='mt-[3.0rem] mb-12 flex flex-col items-center rounded-[2.5rem] mx-20 bg-blue h-fit py-12 px-12'>
+        <div className='mb-12 flex flex-col items-center rounded-t-[5rem] bg-blue h-fit py-12 px-12'>
             <p className='font-inter font-bold text-4xl text-cream'>
             How does our Artwork Realness Analyzer work?
             </p>
@@ -212,8 +212,8 @@ function Home() {
         </div>
 
         <div>
-            <p className='font-inter text-4xl text-blue-100 text-center'>
-            
+            <p className='font-inter font-bold text-[4rem] text-blue-100 text-center'>
+                How to Use?
             </p>
         </div>
 

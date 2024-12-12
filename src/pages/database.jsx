@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import images from '../constants/images';
 import { useSpring, animated } from '@react-spring/web'
 import { useState } from 'react';
+import axios from 'axios';
 
 function Database() {
     
@@ -41,15 +42,7 @@ function Database() {
     const [loading, setLoading] = useState(false);
     const [isSearched, setIsSearched] = useState(false);
     const [isMatch, setIsMatch] = useState(false);
-
-    const handleUIDMatch = () => {
-      setLoading(true);
-      setTimeout(() => {
-          setLoading(false);
-          setIsSearched(true);
-          setIsMatch(inputUID === UID);
-      }, 2000);
-    };
+    const [fetchedImageData, setFetchedImageData] = useState(null); // Store returned data from backend
 
     const handleKeyDown = (event) => {
         if (event.key === 'Enter') {
@@ -57,9 +50,44 @@ function Database() {
         }
     };
 
+    // const handleUIDMatch = () => {
+    //   setLoading(true);
+    //   setTimeout(() => {
+    //       setLoading(false);
+    //       setIsSearched(true);
+    //       setIsMatch(inputUID === UID);
+    //   }, 2000);
+    // };
+
+
+    const handleUIDMatch = async () => {
+      setLoading(true);
+      setIsSearched(false);
+      setIsMatch(false);
+
+      try {
+        // Make a GET request to FastAPI endpoint
+        const response = await axios.get(`http://127.0.0.1:8000/images/${inputUID}`);
+
+        // If the image is found:
+        const data = response.data;
+        setFetchedImageData(data); // Store received data
+        setAuthenticationDate(data.authenticationDate);
+        setIsSearched(true);
+        setIsMatch(true);
+      } catch (error) {
+        // If the image is not found or there's an error:
+        console.error("Error fetching image:", error);
+        setIsSearched(true);
+        setIsMatch(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
   return (
     <div className='min-h-screen w-full bg-cream pb-12'>
-      <div classname='fixed'>
+      <div classme='fixed'>
         <div className='flex items-center h-20 bg-pink'>
           <div className='hidden md:flex'>
             <button className='w-fit px-8 ml-12 h-full bg-pink hover:bg-pink-100'
@@ -228,38 +256,45 @@ function Database() {
             </div>
         </div>
         
+        {loading && (
+            <div className='flex justify-center items-center'>
+                <div className="w-10 h-10 border-4 border-gray-300 border-t-purple rounded-full animate-spin-Slow"></div>
+            </div>
+        )}
+
         {isSearched && (
             <animated.div className="mt-4 mb-12 flex flex-col items-center rounded-[2.5rem] mx-20 bg-blue-300 h-fit p-8 shadow-md"
             style={{ ...fadeIn }}
             >
-                {loading && (
-                        <div className='flex justify-center items-center'>
-                            <div className="w-10 h-10 border-4 border-gray-300 border-t-purple rounded-full animate-spin"></div>
-                        </div>
-                )}
                 {!loading && isSearched && (
                   isMatch ? (
                 <animated.div className="flex w-full bg-white rounded-xl shadow-sm p-6"
                 style={{ ...fadeIn }}>
                     {/* Left Image Section */}
                     <div className="h-[20rem] w-[15rem] flex-shrink-0 bg-gray-200 rounded-lg overflow-hidden">
-                    <img
+                    {/* <img
                         src="blank.jpg"
-                        alt="Example"
+                        alt="blank"
                         className="w-full h-full object-cover"
-                    />
-                    </div>
+                    /> */}
 
+                  <img
+                    src={`data:image/png;base64,${fetchedImageData.image_data_base64}`}
+                    alt="Image database"
+                    className="w-full h-full object-cover"
+                  />
+
+                    </div>
                     {/* Right Text Section */}
                     <div className="ml-6 flex flex-col justify-center">
                     <animated.p className="text-xl font-inter text-gray-700" style={{ ...slideIn2 }}>
-                        UID: <span className='font-medium'>{inputUID}</span>
+                        UID: <span className='font-medium'>{fetchedImageData.uid}</span>
                     </animated.p>
                     <animated.p className="text-xl font-inter text-gray-700 mt-2" style={{ ...slideIn2 }}>
                         Status: <span className="font-medium text-green-600">Authentic</span>
                     </animated.p>
                     <animated.p className="text-xl font-inter text-gray-700 mt-2" style={{ ...slideIn2 }}>
-                        Date of Authentication: <span className="font-medium">{AuthenticationDate}</span>
+                        Date of Authentication: <span className="font-medium">{fetchedImageData.authenticationDate}</span>
                     </animated.p>
                     </div>
                 </animated.div>

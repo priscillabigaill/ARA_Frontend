@@ -26,9 +26,11 @@ export default {
           200: '#BBC7E0',
           300: '#E7ECF6',
           400: '#0951AE',
+          500: '#AEBECB',
         },
         green: {
           DEFAULT: '#C9E9D2',
+          100: '#2F822F',
         },
         purple: {
           DEFAULT: '#7E75D1',
@@ -36,7 +38,7 @@ export default {
       },
       animation: {
         spin: 'spin 1s linear infinite', // Default spin animation
-        spinSlow: 'spin 2s linear infinite', // Slower spin animation
+        spinSlow: 'spin 3s linear infinite', // Increase duration to 3s
       },
       keyframes: {
         spin: {
@@ -45,7 +47,9 @@ export default {
           },
         },
       },
+      
     },
   },
+  
   plugins: [],
 }
